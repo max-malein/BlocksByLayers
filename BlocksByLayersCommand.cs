@@ -54,6 +54,16 @@ namespace CreateFacadeBlocks
             if (rc != Result.Success)
                 return rc;
 
+            // Укажите ширину блока
+            string blockWidth = "";
+            rc = RhinoGet.GetString("Enter block master name", true, ref blockWidth);
+            if (rc != Result.Success)
+                return rc;
+
+            // Укажите высоту этажа
+
+
+
             bool allToParent = false;
             rc = RhinoGet.GetBool("Set colors and materials to parent", true, "No", "Yes", ref allToParent);
             if (rc != Result.Success)
