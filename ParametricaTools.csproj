@@ -2,10 +2,13 @@
 	
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
-    <Version>1.0</Version>
+    <Version>1.0.1</Version>
     <Title>CreateFacadeBlocks</Title>
-    <Description>Description of CreateFacadeBlocks</Description>
+    <Description>Tools for dealing with blocks</Description>
     <TargetExt>.rhp</TargetExt>
+    <Authors>Parametrica</Authors>
+    <PackageProjectUrl>https://github.com/max-malein/ParametricaTools</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/max-malein/ParametricaTools</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
