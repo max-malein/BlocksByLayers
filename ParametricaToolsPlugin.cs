@@ -11,15 +11,15 @@ namespace CreateFacadeBlocks
     /// attributes in AssemblyInfo.cs (you might need to click "Project" ->
     /// "Show All Files" to see it in the "Solution Explorer" window).</para>
     ///</summary>
-    public class CreateFacadeBlocksPlugin : Rhino.PlugIns.PlugIn
+    public class ParametricaToolsPlugin : Rhino.PlugIns.PlugIn
     {
-        public CreateFacadeBlocksPlugin()
+        public ParametricaToolsPlugin()
         {
             Instance = this;
         }
 
         ///<summary>Gets the only instance of the CreateFacadeBlocksPlugin plug-in.</summary>
-        public static CreateFacadeBlocksPlugin Instance { get; private set; }
+        public static ParametricaToolsPlugin Instance { get; private set; }
 
         // You can override methods here to change the plug-in behavior on
         // loading and shut down, add options pages to the Rhino _Option command

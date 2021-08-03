@@ -1,6 +1,7 @@
 ﻿using Rhino;
 using Rhino.Commands;
 using Rhino.DocObjects;
+using Rhino.Geometry;
 using Rhino.Input;
 using Rhino.Input.Custom;
 using System;
@@ -9,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BlocksByLayers
+namespace ParametricaTools
 {
     public class CopyLayerAttributesToObject : Command
     {
@@ -80,38 +81,97 @@ namespace BlocksByLayers
 
             foreach (var objRef in go.Objects())
             {
-                var rhinoObj = objRef.Object();
-                var layerIndex = rhinoObj.Attributes.LayerIndex;
-                var layer = doc.Layers.FindIndex(layerIndex);
-                if (layer != null)
+                if (objRef.Object().ObjectType != ObjectType.InstanceReference)
                 {
-                    if (matValue.CurrentValue)
+                    var rhinoObj = objRef.Object();
+                    var layerIndex = rhinoObj.Attributes.LayerIndex;
+                    var layer = doc.Layers.FindIndex(layerIndex);
+                    if (layer != null)
                     {
-                        rhinoObj.Attributes.MaterialSource = ObjectMaterialSource.MaterialFromObject;
-                        int materialIndex = layer.RenderMaterialIndex;
-                        if (materialIndex != -1)
-                        {
-                            rhinoObj.Attributes.MaterialIndex = materialIndex;
-                        }
+                        SetColorAndMaterial(matValue, colValue, layer, rhinoObj.Attributes);
+                        rhinoObj.CommitChanges();
                     }
-                    
-                    if (colValue.CurrentValue)
+                }
+                else // Block
+                {
+                    var block = objRef.Object() as InstanceObject;
+                    var parentlayerIndex = block.Attributes.LayerIndex;
+                    var parentLayer = Rhino.RhinoDoc.ActiveDoc.Layers.FindIndex(parentlayerIndex);
+                    var def = block.InstanceDefinition;
+
+                    int newDefIndex;
+
+                    string colorCode = GetColorCode(matValue.CurrentValue, colValue.CurrentValue, parentLayer.FullPath);
+                    string defName = def.Name + "_" + colorCode;
+
+                    // Проверить есть ли уже такой блок в файле
+                    var existingBlock = Rhino.RhinoDoc.ActiveDoc.InstanceDefinitions.Find(defName);
+                    if (existingBlock == null)
                     {
-                        rhinoObj.Attributes.ColorSource = ObjectColorSource.ColorFromObject;
-                        var color = layer.Color;
-                        if (color != null)
+                        var geoms = new List<GeometryBase>();
+                        var attrs = new List<ObjectAttributes>();
+                        foreach (var obj in def.GetObjects())
                         {
-                            rhinoObj.Attributes.ObjectColor = color;
+                            var attr = obj.Attributes;
+                            var geom = obj.Geometry;
+
+                            geoms.Add(geom);
+                            SetColorAndMaterial(matValue, colValue, parentLayer, attr);
+                            attrs.Add(attr);
                         }
+
+                        newDefIndex = RhinoDoc.ActiveDoc.InstanceDefinitions.Add(defName, def.Description, new Point3d(), geoms, attrs);
+                    }
+                    else // блок с таким именем уже есть
+                    {
+                        newDefIndex = existingBlock.Index;
                     }
 
-                    rhinoObj.CommitChanges();
+                    // Place new block
+                    var xform = block.InstanceXform;
+                    var oldBlockAttributes = block.Attributes;
+                    RhinoDoc.ActiveDoc.Objects.AddInstanceObject(newDefIndex, xform, oldBlockAttributes);
+
+                    // delete the old one
+                    RhinoDoc.ActiveDoc.Objects.Delete(objRef, true);
                 }
             }
 
             doc.Views.Redraw();
 
             return Result.Success;
+        }
+
+        private string GetColorCode(bool matValue, bool colValue, string fullPath)
+        {
+            string cm = colValue ? "C" : "";
+            cm = matValue ? cm + "M" : cm;
+
+            string code = $"{cm}_{fullPath}";
+            return code;
+        }
+
+        private static void SetColorAndMaterial(OptionToggle matValue, OptionToggle colValue, Layer parentLayer, ObjectAttributes attr)
+        {
+            if (matValue.CurrentValue)
+            {
+                attr.MaterialSource = ObjectMaterialSource.MaterialFromObject;
+                int materialIndex = parentLayer.RenderMaterialIndex;
+                if (materialIndex != -1)
+                {
+                    attr.MaterialIndex = materialIndex;
+                }
+            }
+
+            if (colValue.CurrentValue)
+            {
+                attr.ColorSource = ObjectColorSource.ColorFromObject;
+                var color = parentLayer.Color;
+                if (color != null)
+                {
+                    attr.ObjectColor = color;
+                }
+            }
         }
     }
 }
